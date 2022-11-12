@@ -10,15 +10,24 @@ const gravity = 0.7;
 class Sprite {
     lastKey;
 
-    constructor({ position, velocity }) {
+    constructor({ position, velocity, color = 'red' }) {
         this.position = position;
         this.velocity = velocity;
+        this.width = 50;
         this.height = 150;
+        this.color = color;
+        this.attacBox = {
+            position: this.position,
+            width: 100,
+            height: 50,
+        };
     }
 
     draw() {
-        canvasContext.fillStyle = 'red';
+        canvasContext.fillStyle = this.color;
         canvasContext.fillRect(this.position.x, this.position.y, 50, this.height);
+        canvasContext.fillStyle = 'green';
+        canvasContext.fillRect(this.attacBox.position.x, this.attacBox.position.y, this.attacBox.width, this.attacBox.height);
     }
 
     update() {
@@ -31,10 +40,19 @@ class Sprite {
             this.velocity.y += gravity;
         }
     }
+
+    move(keys = {}) {
+        this.velocity.x = 0;
+        if ((keys.a.pressed && (this.lastKey === 'a')) || keys.ArrowLeft.pressed && (this.lastKey === 'ArrowLeft')) {
+            this.velocity.x = -5;
+        } else if ((keys.d.pressed && (this.lastKey === 'd')) || (keys.ArrowRight.pressed && (this.lastKey === 'ArrowRight'))) {
+            this.velocity.x = 5;
+        }
+    }
 }
 
 const player = new Sprite({ position: { x: 0, y: 0 }, velocity: { x: 0, y: 10 } });
-const enemy = new Sprite({ position: { x: 400, y: 100 }, velocity: { x: 0, y: 0 } });
+const enemy = new Sprite({ position: { x: 400, y: 100 }, velocity: { x: 0, y: 0 }, color: 'blue' });
 const keys = {
     a: { pressed: false },
     d: { pressed: false },
@@ -53,16 +71,22 @@ function animate() {
 
     player.velocity.x = 0;
     enemy.velocity.x = 0;
-    if (keys.a.pressed && player.lastKey === 'a') {
-        player.velocity.x = -5;
-    } else if (keys.d.pressed && player.lastKey === 'd') {
-        player.velocity.x = 5;
+    player.move(keys);
+    enemy.move(keys);
+
+
+    if (detectHorizontalCollision(player, enemy) && detectVerticalCollision(player, enemy)) {
+        console.log('hit');
     }
-    if (keys.ArrowRight.pressed && enemy.lastKey === 'ArrowRight') {
-        enemy.velocity.x = 5;
-    } else if (keys.ArrowLeft.pressed && enemy.lastKey === 'ArrowLeft') {
-        enemy.velocity.x = -5;
-    }
+}
+
+
+function detectHorizontalCollision(player = {}, enemy = {}) {
+    return ((player.attacBox.position.x + player.attacBox.width) >= enemy.position.x) && (player.attacBox.position.x <= enemy.position.x + enemy.width);
+}
+
+function detectVerticalCollision(player = {}, enemy = {}) {
+    return ((player.attacBox.position.y + player.attacBox.height) >= enemy.position.y) && (player.attacBox.position.y <= (enemy.position.y + enemy.height));
 }
 
 animate();
@@ -78,7 +102,7 @@ window.addEventListener('keydown', (event) => {
             player.lastKey = 'a';
             break;
         case 'w':
-            player.velocity.y = -10;
+            player.velocity.y = -20;
             break;
         case 'ArrowRight':
             keys.ArrowRight.pressed = true;
@@ -89,7 +113,7 @@ window.addEventListener('keydown', (event) => {
             enemy.lastKey = 'ArrowLeft';
             break;
         case 'ArrowUp':
-            enemy.velocity.y = -10;
+            enemy.velocity.y = -20;
             break;
 
     }
